@@ -8,7 +8,6 @@ const productSchema = mongoose.Schema(
         },
         slug: {
             type: String,
-            required: true,
         },
         image: {
             type: String,
@@ -19,13 +18,13 @@ const productSchema = mongoose.Schema(
             required: true,
         },
         brand: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Brand",
+            type: String,
+            // ref: "Brand",
             required: true,
         },
         category: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Category",
+            type: String,
+            // ref: "Category",
             required: true,
         },
         price: {

@@ -1,6 +1,8 @@
 
 //ssl
 import SSLCommerzPayment from 'sslcommerz-lts';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const CALLBACK_URL = process.env.NODE_ENV === 'dev' ? process.env.DEV_DOMAIN : process.env.LIVE_DOMAIN;
 const HOST_URL = process.env.NODE_ENV === 'dev' ? process.env.DEV_HOST : process.env.LIVE_HOST;
@@ -56,7 +58,6 @@ export const initiateSSL = async (req, res) => {
 }
 
 export const SSLipn = async (req, res) => {
-    console.log('ipn : ' + req.body)
     return res.status(200).json({
         success: true,
         data: req.body
@@ -64,6 +65,7 @@ export const SSLipn = async (req, res) => {
 }
 
 export const SSLsuccess = async (req, res, next) => {
+    console.log('ssl success')
     req.val_id = req.body.val_id;
     next()
     //  res.redirect(`${CALLBACK_URL}/payment/success`)

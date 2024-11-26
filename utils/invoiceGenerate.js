@@ -54,7 +54,6 @@ export const invoiceGenerate = (order, filePath,dataCallback, endCallback) => {
     .text(`Tax: $${order.taxPrice}`, { align: 'left' })
     .text(`Shipping: $${order.shippingPrice}`, { align: 'left' })
     .text(`Total: $${order.totalPrice}`, { align: 'left' })
-    .text(`Payment Status: $${order.isPaid}`, { align: 'left' })
     .moveDown();
 
   // Footer

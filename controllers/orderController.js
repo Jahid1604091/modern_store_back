@@ -89,7 +89,7 @@ export const getAllOrders = asyncHandler(async (req, res) => {
 //@access   protected
 export const generateInvoice = asyncHandler(async (req, res) => {
     const __dirname = path.resolve()
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('user','name email');
     const invoicesDir = path.join(__dirname, 'invoices');
     if (!fs.existsSync(invoicesDir)) {
         fs.mkdirSync(invoicesDir, { recursive: true });
@@ -101,11 +101,14 @@ export const generateInvoice = asyncHandler(async (req, res) => {
         'Content-Disposition': `attachment;filename=invoice.pdf`,
     });
 
-    invoiceGenerate(order, 
-        invoicePath, 
-        (chunk) => stream.write(chunk),
-        () => stream.end()
-    );
+    await new Promise((resolve,reject)=>{
+        invoiceGenerate(order, 
+            invoicePath, 
+            (chunk) => stream.write(chunk),
+            () => stream.end(),
+            resolve
+        );
+    })  
     
     // res.download(invoicePath);
     return res.status(200).json({
