@@ -14,7 +14,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     return res.status(200).json({
         success: true,
         data: newOrder,
-        msg:"Order Creation Successful!"
+        msg: "Order Creation Successful!"
     });
 })
 
@@ -68,28 +68,17 @@ export const updateOrderToPaid = asyncHandler(async (req, res) => {
     return res.status(200).json({
         success: true,
         data: updatedOrder,
-        msg:"Order Updated Successfully!"
+        msg: "Order Updated Successfully!"
     });
 })
 
-
-//@route    /api/orders/
-//@desc     GET all  orders
-//@access   protected/Admin
-export const getAllOrders = asyncHandler(async (req, res) => {
-    const orders = await Order.find({}).populate('user', 'id name')
-    return res.status(200).json({
-        success: true,
-        data: orders
-    });
-})
 
 //@route    /api/orders/myorders/:id/invoice
 //@desc     GET     generate an invoice
 //@access   protected
 export const generateInvoice = asyncHandler(async (req, res) => {
     const __dirname = path.resolve()
-    const order = await Order.findById(req.params.id).populate('user','name email');
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
     const invoicesDir = path.join(__dirname, 'invoices');
     if (!fs.existsSync(invoicesDir)) {
         fs.mkdirSync(invoicesDir, { recursive: true });
@@ -101,21 +90,82 @@ export const generateInvoice = asyncHandler(async (req, res) => {
         'Content-Disposition': `attachment;filename=invoice.pdf`,
     });
 
-    await new Promise((resolve,reject)=>{
-        invoiceGenerate(order, 
-            invoicePath, 
+    await new Promise((resolve, reject) => {
+        invoiceGenerate(order,
+            invoicePath,
             (chunk) => stream.write(chunk),
             () => stream.end(),
             resolve
         );
-    })  
-    
+    })
+
     // res.download(invoicePath);
     return res.status(200).json({
         success: true,
         data: invoicePath,
-        msg:"Invoice Generated Successfully!"
+        msg: "Invoice Generated Successfully!"
     });
+})
+
+//--------------------------------------------------------------
+//---------------- S Y S T E M      A D M I N ------------------
+//--------------------------------------------------------------
+
+//@route    /api/orders/
+//@desc     GET all  orders
+//@access   protected/Admin
+export const getAllOrders = asyncHandler(async (req, res) => {
+    const orders = await Order.find({})
+        .select('_id shippingPrice taxPrice totalPrice isPaid isDelivered createdAt paidAt deliveredAt')
+    // .populate('user', 'id name')
+    return res.status(200).json({
+        success: true,
+        data: orders
+    });
+})
+
+//@route    /api/orders/:id
+//@desc     GET all  orders
+//@access   protected/Admin
+export const getOrder = asyncHandler(async (req, res) => {
+    const orders = await Order.findById(req.params.id)
+        .select('-updatedAt -__v')
+        .populate('user', 'id name email')
+    return res.status(200).json({
+        success: true,
+        data: orders
+    });
+})
+
+//@route    /api/orders/:id/change-to-delivered
+//@desc     PUT   make order delivered
+//@access   protected/Admin
+export const updateToDelivered = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+        return res.status(404).json({
+            success: false,
+            msg: "Order Not Found"
+        });
+    }
+
+    order.isDelivered = true;
+    order.deliveredAt = Date.now();
+    const updatedOrder = await order.save();
+
+    if (updatedOrder) {
+        return res.status(200).json({
+            success: true,
+            msg: "Order Updated Successfully!"
+        });
+
+    }
+    else {
+        return res.status(400).json({
+            success: false,
+            msg: "Order Update to Delivered failed!"
+        });
+    }
 })
 
 
