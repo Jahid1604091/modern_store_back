@@ -37,18 +37,17 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 
-if (process.env.NODE_ENV === 'prod') {
-  app.use(express.static(path.join(__dirname, '../frontend/build'))); // Adjust path here
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html')); // Adjust path here
-  });
-}
+//use for integrated application
+// if (process.env.NODE_ENV === 'prod') {
+//   app.use(express.static(path.join(__dirname, '../frontend/build'))); // Adjust path here
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html')); // Adjust path here
+//   });
+// }
 
-else {
   app.get('', (req, res) => {
     res.send('Server is up...')
   });
-}
 
 
 app.use(notFound);
