@@ -176,7 +176,7 @@ export const getOrdersOverview = asyncHandler(async (req, res) => {
         {
             '$group': {
                 '_id': null,
-                'totalRevenue': {
+                'totalPrice': {
                     '$sum': '$totalPrice'
                 },
                 'totalOrders': {
@@ -220,7 +220,7 @@ export const getOrdersOverview = asyncHandler(async (req, res) => {
     ]);
     return res.status(200).json({
         success: true,
-        data: overview
+        data: overview[0] || {}
     });
 })
 
