@@ -168,4 +168,59 @@ export const updateToDelivered = asyncHandler(async (req, res) => {
     }
 })
 
+//@route    /api/orders/overview
+//@desc     get   get summary of orders
+//@access   protected/Admin
+export const getOrdersOverview = asyncHandler(async (req, res) => {
+    const overview = await Order.aggregate([
+        {
+            '$group': {
+                '_id': null,
+                'totalRevenue': {
+                    '$sum': '$totalPrice'
+                },
+                'totalOrders': {
+                    '$sum': 1
+                },
+                'totalPaidOrders': {
+                    '$sum': {
+                        '$cond': [
+                            'isPaid', 1, 0
+                        ]
+                    }
+                },
+                'totalDeliveredOrders': {
+                    '$sum': {
+                        '$cond': [
+                            'isDelivered', 1, 0
+                        ]
+                    }
+                },
+                'totalOrderItems': {
+                    '$sum': {
+                        '$sum': '$orderItems.qty'
+                    }
+                },
+                'uniqueUsers': {
+                    '$addToSet': '$user'
+                }
+            }
+        }, {
+            '$project': {
+                'totalPrice': 1,
+                'totalOrders': 1,
+                'totalPaidOrders': 1,
+                'totalDeliveredOrders': 1,
+                'totalOrderItems': 1,
+                'totalUsers': {
+                    '$size': '$uniqueUsers'
+                }
+            }
+        }
+    ]);
+    return res.status(200).json({
+        success: true,
+        data: overview
+    });
+})
 
