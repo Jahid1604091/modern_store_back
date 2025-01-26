@@ -3,3 +3,6 @@
     {category:"Books"},
     {$set:{category:ObjectId("6795091b37e7b73b97171edf")}}
     )
+
+2. Update Categories table, add isActive column : true 
+    db["categories"].updateMany({},{$set:{isActive:true}})

@@ -14,6 +14,10 @@ const categorySchema = mongoose.Schema({
     parentId: {
         type: String
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     isSoftDeleted: {
         type: Boolean,
         default: false

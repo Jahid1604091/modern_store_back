@@ -12,7 +12,7 @@ export const createCategory = asyncHandler(async (req, res) => {
     const { name } = req.body;
     const slug = slugify(name, '-');
     const catObj = { name, slug };
-    if(req.body.parentId){
+    if (req.body.parentId) {
         catObj.parentId = req.body.parentId;
     }
     const category = new Category(catObj);
@@ -29,7 +29,13 @@ export const createCategory = asyncHandler(async (req, res) => {
 //@desc     GET:fetch all categories
 //@access   public
 export const getCategories = asyncHandler(async (req, res, next) => {
-    const categories = await Category.find({});
+    let categories;
+    if (req.user && req.user.role === 'admin') {
+        categories = await Category.find({isSoftDeleted: false });
+    }
+    else{
+        categories = await Category.find({ isActive: true, isSoftDeleted: false });
+    }
     if (!categories) {
         return next(new ErrorResponse('No Category Found!', 404));
     }
@@ -48,7 +54,7 @@ export const getCategories = asyncHandler(async (req, res, next) => {
 //@access   protected by admin
 export const editCategory = asyncHandler(async (req, res, next) => {
     const id = req.params.id;
-    const { name } = req.body
+    const { name, status } = req.body
     if (!name) {
         return next(new ErrorResponse('Category name is required!', 400));
     }
@@ -59,7 +65,8 @@ export const editCategory = asyncHandler(async (req, res, next) => {
     }
 
     //update table
-    category.name = name;
+    category.name = name || category.name;
+    category.isActive = status || category.isActive;
     category.slug = slugify(name, '-');
 
     const updatedCategory = await category.save();
@@ -96,26 +103,26 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
     });
 })
 
-function formatCategories(passedCategories,parentId = null){
+function formatCategories(passedCategories, parentId = null) {
     const finalFormatedCategoryList = [];
     let categories;
-    if(parentId ==null){
-        categories = passedCategories.filter(cat=>cat.parentId == undefined);
+    if (parentId == null) {
+        categories = passedCategories.filter(cat => cat.parentId == undefined);
     }
-    else{
-        categories = passedCategories.filter(cat=>cat.parentId == parentId);
+    else {
+        categories = passedCategories.filter(cat => cat.parentId == parentId);
     }
 
-    for(let c of categories){
+    for (let c of categories) {
         finalFormatedCategoryList.push({
-            _id:c._id,
-            name:c.name,
-            slug:c.slug,
-            subcategories:formatCategories(passedCategories,c._id)
+            _id: c._id,
+            name: c.name,
+            slug: c.slug,
+            subcategories: formatCategories(passedCategories, c._id)
         })
     }
 
-  
+
 
     return finalFormatedCategoryList;
 }
