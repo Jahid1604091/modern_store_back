@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const categorySchema = mongoose.Schema({
     name: {
         type: String,
@@ -10,14 +11,17 @@ const categorySchema = mongoose.Schema({
         type: String,
         unique: true,
     },
-    isSoftDeleted:{
-        type:Boolean,
-        default:false
+    parentId: {
+        type: String
     },
-    softDeletedAt:{
+    isSoftDeleted: {
+        type: Boolean,
+        default: false
+    },
+    softDeletedAt: {
         type: Date,
     },
-    deletedBy:{
+    deletedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     }

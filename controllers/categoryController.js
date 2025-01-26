@@ -3,13 +3,19 @@ import Category from "../models/categoryModel.js";
 import slugify from 'slugify';
 import ErrorResponse from "../utils/errorresponse.js";
 
+
+
 //@route    /api/categories/admin
 //@desc     POST: create a new category
 //@access   protected by admin
 export const createCategory = asyncHandler(async (req, res) => {
     const { name } = req.body;
     const slug = slugify(name, '-');
-    const category = new Category({ name, slug });
+    const catObj = { name, slug };
+    if(req.body.parentId){
+        catObj.parentId = req.body.parentId;
+    }
+    const category = new Category(catObj);
     const newCategory = await category.save();
     return res.status(200).json({
         success: true,
@@ -23,14 +29,16 @@ export const createCategory = asyncHandler(async (req, res) => {
 //@desc     GET:fetch all categories
 //@access   public
 export const getCategories = asyncHandler(async (req, res, next) => {
-    const categories = await Category.find({}).select('_id name slug');
+    const categories = await Category.find({});
     if (!categories) {
         return next(new ErrorResponse('No Category Found!', 404));
     }
+
+    const refinedCategories = formatCategories(categories);
     return res.status(200).json({
         success: true,
         msg: "Category fetched successfully!",
-        data: categories
+        data: refinedCategories
     });
 })
 
@@ -87,3 +95,27 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
         data: category
     });
 })
+
+function formatCategories(passedCategories,parentId = null){
+    const finalFormatedCategoryList = [];
+    let categories;
+    if(parentId ==null){
+        categories = passedCategories.filter(cat=>cat.parentId == undefined);
+    }
+    else{
+        categories = passedCategories.filter(cat=>cat.parentId == parentId);
+    }
+
+    for(let c of categories){
+        finalFormatedCategoryList.push({
+            _id:c._id,
+            name:c.name,
+            slug:c.slug,
+            subcategories:formatCategories(passedCategories,c._id)
+        })
+    }
+
+  
+
+    return finalFormatedCategoryList;
+}

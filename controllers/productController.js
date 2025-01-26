@@ -28,9 +28,9 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   try {
     // Count total number of products matching the query
     const totalProducts = await Product.countDocuments({ ...query });
-
+    console.time('Transform After Query');
     // Find products with pagination
-    const products = await Product.find({ ...query })
+    const products = await Product.find({ ...query,isSoftDeleted:false })
       .populate('brand', 'name')
       .populate('category', 'name')
       .limit(per_page)
@@ -39,10 +39,13 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
+      count:totalProducts,
       data: products,
       page,
       pages: Math.ceil(totalProducts / per_page), // Total number of pages
     });
+
+    console.timeEnd('Transform After Query');
   } catch (error) {
     res.status(500).json({
       success: false,

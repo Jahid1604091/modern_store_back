@@ -1,0 +1,5 @@
+1. Update category to categoryid where category == 'Books: 
+    db["products"].updateMany(
+    {category:"Books"},
+    {$set:{category:ObjectId("6795091b37e7b73b97171edf")}}
+    )
