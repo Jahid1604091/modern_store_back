@@ -3,13 +3,19 @@ import Category from "../models/categoryModel.js";
 import slugify from 'slugify';
 import ErrorResponse from "../utils/errorresponse.js";
 
-//@route    /api/categories/admin
+
+
+//@route    /api/categories
 //@desc     POST: create a new category
 //@access   protected by admin
 export const createCategory = asyncHandler(async (req, res) => {
-    const { name } = req.body;
+    const { name, status } = req.body;
     const slug = slugify(name, '-');
-    const category = new Category({ name, slug });
+    const catObj = { name, slug, isActive:status };
+    if (req.body.parentId) {
+        catObj.parentId = req.body.parentId;
+    }
+    const category = new Category(catObj);
     const newCategory = await category.save();
     return res.status(200).json({
         success: true,
@@ -21,29 +27,34 @@ export const createCategory = asyncHandler(async (req, res) => {
 
 //@route    /api/categories
 //@desc     GET:fetch all categories
-//@access   public
+//@access   public(optional protection given)
 export const getCategories = asyncHandler(async (req, res, next) => {
-    const categories = await Category.find({}).select('_id name slug');
+    let categories;
+    if (req.user && req.user.role === 'admin') {
+        categories = await Category.find({isSoftDeleted: false });
+    }
+    else{
+        categories = await Category.find({ isActive: true, isSoftDeleted: false });
+    }
     if (!categories) {
         return next(new ErrorResponse('No Category Found!', 404));
     }
+
+    const refinedCategories = formatCategories(categories);
     return res.status(200).json({
         success: true,
         msg: "Category fetched successfully!",
-        data: categories
+        data: refinedCategories
     });
 })
 
 
-//@route    /api/categories/admin/:id
+//@route    /api/categories/:id
 //@desc     PATCH: update a category
 //@access   protected by admin
 export const editCategory = asyncHandler(async (req, res, next) => {
     const id = req.params.id;
-    const { name } = req.body
-    if (!name) {
-        return next(new ErrorResponse('Category name is required!', 400));
-    }
+    const { name, status } = req.body
     const category = await Category.findById(id);
 
     if (!category) {
@@ -51,8 +62,13 @@ export const editCategory = asyncHandler(async (req, res, next) => {
     }
 
     //update table
-    category.name = name;
-    category.slug = slugify(name, '-');
+    category.name = name || category.name;
+    if(name){
+        category.slug = slugify(name, '-');
+    }
+    if (typeof status !=='undefined') {
+        category.isActive = status;
+    }
 
     const updatedCategory = await category.save();
 
@@ -63,7 +79,7 @@ export const editCategory = asyncHandler(async (req, res, next) => {
     });
 })
 
-//@route    /api/categories/admin/:id
+//@route    /api/categories/:id
 //@desc     DELETE: delete a category
 //@access   protected by admin
 export const deleteCategory = asyncHandler(async (req, res, next) => {
@@ -87,3 +103,28 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
         data: category
     });
 })
+
+function formatCategories(passedCategories, parentId = null) {
+    const finalFormatedCategoryList = [];
+    let categories;
+    if (parentId == null) {
+        categories = passedCategories.filter(cat => cat.parentId == undefined);
+    }
+    else {
+        categories = passedCategories.filter(cat => cat.parentId == parentId);
+    }
+
+    for (let c of categories) {
+        finalFormatedCategoryList.push({
+            _id: c._id,
+            name: c.name,
+            slug: c.slug,
+            isActive:c.isActive,
+            subcategories: formatCategories(passedCategories, c._id)
+        })
+    }
+
+
+
+    return finalFormatedCategoryList;
+}
