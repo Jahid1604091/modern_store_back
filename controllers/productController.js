@@ -59,7 +59,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 //@desc     get product
 //@access   public
 export const getProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(req.params.id).populate('category','name');
   res.status(200).json({
     success: true,
     data: product,

@@ -5,13 +5,13 @@ import ErrorResponse from "../utils/errorresponse.js";
 
 
 
-//@route    /api/categories/admin
+//@route    /api/categories
 //@desc     POST: create a new category
 //@access   protected by admin
 export const createCategory = asyncHandler(async (req, res) => {
-    const { name } = req.body;
+    const { name, status } = req.body;
     const slug = slugify(name, '-');
-    const catObj = { name, slug };
+    const catObj = { name, slug, isActive:status };
     if (req.body.parentId) {
         catObj.parentId = req.body.parentId;
     }
@@ -27,7 +27,7 @@ export const createCategory = asyncHandler(async (req, res) => {
 
 //@route    /api/categories
 //@desc     GET:fetch all categories
-//@access   public
+//@access   public(optional protection given)
 export const getCategories = asyncHandler(async (req, res, next) => {
     let categories;
     if (req.user && req.user.role === 'admin') {
@@ -49,15 +49,12 @@ export const getCategories = asyncHandler(async (req, res, next) => {
 })
 
 
-//@route    /api/categories/admin/:id
+//@route    /api/categories/:id
 //@desc     PATCH: update a category
 //@access   protected by admin
 export const editCategory = asyncHandler(async (req, res, next) => {
     const id = req.params.id;
     const { name, status } = req.body
-    if (!name) {
-        return next(new ErrorResponse('Category name is required!', 400));
-    }
     const category = await Category.findById(id);
 
     if (!category) {
@@ -66,8 +63,12 @@ export const editCategory = asyncHandler(async (req, res, next) => {
 
     //update table
     category.name = name || category.name;
-    category.isActive = status || category.isActive;
-    category.slug = slugify(name, '-');
+    if(name){
+        category.slug = slugify(name, '-');
+    }
+    if (typeof status !=='undefined') {
+        category.isActive = status;
+    }
 
     const updatedCategory = await category.save();
 
@@ -78,7 +79,7 @@ export const editCategory = asyncHandler(async (req, res, next) => {
     });
 })
 
-//@route    /api/categories/admin/:id
+//@route    /api/categories/:id
 //@desc     DELETE: delete a category
 //@access   protected by admin
 export const deleteCategory = asyncHandler(async (req, res, next) => {
@@ -118,6 +119,7 @@ function formatCategories(passedCategories, parentId = null) {
             _id: c._id,
             name: c.name,
             slug: c.slug,
+            isActive:c.isActive,
             subcategories: formatCategories(passedCategories, c._id)
         })
     }

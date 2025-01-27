@@ -37,7 +37,7 @@ const optionalAuth = asyncHandler(async(req,res,next)=>{
 
     if(!token){
         req.user = null;
-       return next();
+        return next();
     }
 
     try {

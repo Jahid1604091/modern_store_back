@@ -4,9 +4,9 @@ import { protect, authorize, optionalAuth } from '../middleware/authMiddleware.j
 import { createCategory, deleteCategory, editCategory, getCategories } from '../controllers/categoryController.js';
 
 
-router.route('/admin').post(protect, authorize('admin'), createCategory);
-router.route('/admin/:id').delete(protect, authorize('admin'), deleteCategory);
-router.route('/admin/:id').patch(protect, authorize('admin'), editCategory);
+router.route('/').post(protect, authorize('admin'), createCategory);
+router.route('/:id').delete(protect, authorize('admin'), deleteCategory);
+router.route('/:id').patch(protect, authorize('admin'), editCategory);
 
 router.route('/').get(optionalAuth,getCategories);
 
