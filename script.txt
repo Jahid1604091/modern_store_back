@@ -6,3 +6,6 @@
 
 2. Update Categories table, add isActive column : true 
     db["categories"].updateMany({},{$set:{isActive:true}})
+    
+3. Update Products table, add isActive column : true 
+    db["products"].updateMany({},{$set:{isActive:true}})

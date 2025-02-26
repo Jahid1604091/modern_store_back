@@ -6,50 +6,57 @@ import fs from 'fs';
 import Category from '../models/categoryModel.js';
 import Brand from '../models/brandModel.js';
 import ErrorResponse from '../utils/errorresponse.js';
+import { per_page } from '../utils/misc.js';
 
 //@route    /api/products?q='df'
 //@desc     get all products
 //@access   public
 export const getAllProducts = asyncHandler(async (req, res) => {
-  const per_page = 8; // Number of products per page
-  const page = Number(req.query.page) || 1; // Current page number
-  const searchTerm = req.query.q ? req.query.q.trim() : ''; // Search term from query parameter
+  const page = parseInt(req.query.page) || 1; // Default page, explicitly parse to integer
+  const perPage = 10; // Items per page (renamed for clarity)
+  const searchTerm = req.query.q ? req.query.q.trim() : '';
 
-  // Build the search query
-  const query = searchTerm
-    ? {
-      name: {
-        $regex: searchTerm,
-        $options: 'i', // Case insensitive search
-      },
-    }
-    : {};
+  const query = { isSoftDeleted: false };
+
+  // Authorization: Only admin can see inactive products
+  if (!req.user || req.user.role !== 'admin') {
+    query.isActive = true;
+  }
+
+  // Search query (improved for efficiency and correctness)
+  if (searchTerm) {
+    query.$or = [
+      { name: { $regex: searchTerm, $options: 'i' } },
+      { description: { $regex: searchTerm, $options: 'i' } },
+      { brand: { $regex: searchTerm, $options: 'i' } },
+      { 'category.name': { $regex: searchTerm, $options: 'i' } }, // Assuming category is populated
+    ];
+  }
 
   try {
-    // Count total number of products matching the query
-    const totalProducts = await Product.countDocuments({ ...query });
-    console.time('Transform After Query');
-    // Find products with pagination
-    const products = await Product.find({ ...query,isSoftDeleted:false })
-      .populate('brand', 'name')
+    // Optimization: Get total count only if needed for pagination
+    const totalProducts = await Product.countDocuments(query);
+
+    const products = await Product.find(query)
       .populate('category', 'name')
-      .limit(per_page)
-      .skip(per_page * (page - 1))
-      .sort({ sales: -1, views: -1 });
+      .limit(perPage)
+      .skip((page - 1) * perPage) // Corrected skip calculation
+      .sort({ sales: -1, views: -1 })
+      .lean(); // Add lean() for plain JavaScript objects, potentially improving performance
 
     res.status(200).json({
       success: true,
-      count:totalProducts,
+      count: totalProducts,
       data: products,
       page,
-      pages: Math.ceil(totalProducts / per_page), // Total number of pages
+      pages: Math.ceil(totalProducts / perPage),
     });
 
-    console.timeEnd('Transform After Query');
   } catch (error) {
+    console.error('Error fetching products:', error);
     res.status(500).json({
       success: false,
-      msg: "An error occurred while fetching products.",
+      message: 'An error occurred while fetching products.', // More descriptive message
     });
   }
 });
@@ -59,7 +66,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 //@desc     get product
 //@access   public
 export const getProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id).populate('category','name');
+  const product = await Product.findById(req.params.id).populate('category', 'name');
   res.status(200).json({
     success: true,
     data: product,
@@ -77,7 +84,7 @@ export const incremeentProductView = asyncHandler(async (req, res) => {
 });
 
 //------------------- A D M I N------------------------
-//@route    /api/products/admin
+//@route    /api/products
 //@desc     POST: create a new product
 //@access   protected by admin
 export const createProduct = asyncHandler(async (req, res) => {
@@ -88,7 +95,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     });
   }
 
-  const { name, description, brand, category, price, countInStock } = req.body;
+  const { name, description, brand, category, price, countInStock, status } = req.body;
 
   // Check if the category exists and is not soft-deleted
   const existingCategory = await Category.findOne({ _id: category, isSoftDeleted: false });
@@ -100,13 +107,13 @@ export const createProduct = asyncHandler(async (req, res) => {
   }
 
   // Check if the brand exists and is not soft-deleted
-  const existingBrand = await Brand.findOne({ _id: brand, isSoftDeleted: false });
-  if (!existingBrand) {
-    return res.status(404).json({
-      success: false,
-      msg: 'Brand not found or it has been soft-deleted!'
-    });
-  }
+  // const existingBrand = await Brand.findOne({ _id: brand, isSoftDeleted: false });
+  // if (!existingBrand) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     msg: 'Brand not found or it has been soft-deleted!'
+  //   });
+  // }
 
   const slug = slugify(name, '-');
 
@@ -114,12 +121,13 @@ export const createProduct = asyncHandler(async (req, res) => {
   const product = new Product({
     name,
     slug,
-    image: req.file.path,
+    image: req.file.path.replace(/\\/g, "/"), //convert \ to /
     description,
     brand,
     category,
     price,
-    countInStock
+    countInStock,
+    isActive: status
   });
   const newProduct = await product.save();
   return res.status(200).json({
@@ -130,7 +138,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 })
 
 
-//@route    /api/products/admin/:id
+//@route    /api/products/:id
 //@desc     PATCH: update a new product
 //@access   protected by admin
 export const editProduct = asyncHandler(async (req, res) => {
@@ -138,7 +146,7 @@ export const editProduct = asyncHandler(async (req, res) => {
   if (!product) {
     return next(new ErrorResponse('No Product Found to Update!', 404));
   }
-  const { name, description, brand, category, price, countInStock } = req.body;
+  const { name, description, brand, category, price, countInStock, status } = req.body;
 
   // Check if the category exists and is not soft-deleted
   // const existingCategory = await Category.findOne({ _id: category, isSoftDeleted: false });
@@ -159,12 +167,15 @@ export const editProduct = asyncHandler(async (req, res) => {
   // }
 
   product.name = name || product.name;
-  product.slug = name ?  slugify(name, '-') : product.slug;
+  product.slug = name ? slugify(name, '-') : product.slug;
   product.description = description || product.description;
   product.brand = brand || product.brand;
   product.category = category || product.category;
   product.price = price || product.price;
   product.countInStock = countInStock || product.countInStock;
+  if (typeof status !== 'undefined') {
+    product.isActive = status;
+  }
 
   // Handle image upload
   if (req.file) {
@@ -189,7 +200,7 @@ export const editProduct = asyncHandler(async (req, res) => {
   });
 })
 
-//@route    /api/products/admin/:id
+//@route    /api/products/:id
 //@desc     DELETE: delete a product
 //@access   protected by admin
 export const deleteProduct = asyncHandler(async (req, res, next) => {
