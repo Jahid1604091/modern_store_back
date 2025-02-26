@@ -1,6 +1,6 @@
 import express from 'express';
 import { createProduct, deleteProduct, editProduct, getAllProducts, getProduct, incremeentProductView } from '../controllers/productController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+import { protect, authorize, optionalAuth } from '../middleware/authMiddleware.js';
 import path from 'path';
 import multer from 'multer';
 
@@ -19,18 +19,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.route('/').get(getAllProducts)
-
+router.route('/')
+    .get(optionalAuth,getAllProducts)
+    .post(protect, authorize('admin'), upload.single('image'), createProduct);
 
 router.route('/:id')
     .get(getProduct)
+    .patch(protect, authorize('admin'), upload.single('image'), editProduct)
+    .delete(protect, authorize('admin'), deleteProduct);
 
-
-router.route('/:id/view')
-    .put(incremeentProductView)
-
-router.route('/admin').post(protect, authorize('admin'), upload.single('image'), createProduct);
-router.route('/admin/:id').delete(protect, authorize('admin'), deleteProduct);
-router.route('/admin/:id').patch(protect, authorize('admin'), upload.single('image'), editProduct);
+router.route('/:id/view').put(incremeentProductView);
 
 export default router;

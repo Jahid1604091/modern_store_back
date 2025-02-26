@@ -21,7 +21,7 @@ app.use(cors({
   // origin: [process.env.DEV_DOMAIN, process.env.LIVE_DOMAIN, process.env.DEV_ADMIN, process.env.LIVE_ADMIN],
   origin: "*",
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type','*'],
+  allowedHeaders: ['Content-Type', '*'],
 }));
 
 
@@ -29,7 +29,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/invoices', express.static(path.join(__dirname, './invoices')));
-app.use('/images/*', express.static(path.join(__dirname, './images')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
@@ -45,9 +45,9 @@ app.use('/api/brands', brandRoutes);
 //   });
 // }
 
-  app.get('', (req, res) => {
-    res.send('Server is up...')
-  });
+app.get('', (req, res) => {
+  res.send('Server is up...')
+});
 
 
 app.use(notFound);

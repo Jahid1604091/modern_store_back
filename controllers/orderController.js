@@ -4,6 +4,7 @@ import Product from "../models/productModel.js";
 import path from 'path';
 import { invoiceGenerate } from "../utils/invoiceGenerate.js";
 import fs from 'fs';
+import { per_page } from "../utils/misc.js";
 
 //@route    /api/orders/
 //@desc     post create a new order
@@ -115,12 +116,23 @@ export const generateInvoice = asyncHandler(async (req, res) => {
 //@desc     GET all  orders
 //@access   protected/Admin
 export const getAllOrders = asyncHandler(async (req, res) => {
+    const page = Number(req.query.page) || 1; //default page
+
+    // Build the search query
+
+
     const orders = await Order.find({})
         .select('_id shippingPrice taxPrice totalPrice isPaid isDelivered createdAt paidAt deliveredAt')
+        .limit(per_page)
+        .skip(per_page * (page - 1))
     // .populate('user', 'id name')
+    const totalOrders = await Order.countDocuments();
     return res.status(200).json({
         success: true,
-        data: orders
+        data: orders,
+        count: totalOrders,
+        page,
+        pages: Math.ceil(totalOrders / per_page),
     });
 })
 

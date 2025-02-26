@@ -20,7 +20,7 @@ const productSchema = mongoose.Schema(
         brand: {
             type: String,
             // ref: "Brand",
-            required: true,
+            // required: true,
         },
         category: {
             type: mongoose.Schema.Types.ObjectId,
@@ -44,6 +44,10 @@ const productSchema = mongoose.Schema(
         sales: {
             type: Number,
             default: 0,
+        },
+        isActive: {
+            type: Boolean,
+            default: true
         },
         isSoftDeleted: {
             type: Boolean,
