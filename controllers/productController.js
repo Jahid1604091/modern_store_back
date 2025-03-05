@@ -83,6 +83,43 @@ export const incremeentProductView = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, msg: 'View count incremented' });
 });
 
+//@route    /api/products/:id/review
+//@desc     post    review product
+//@access   protected
+export const addReview = asyncHandler(async (req, res, next) => {
+  console.log(req.params)
+  const product = await Product.findById(req.params.id);
+  //check if already reviewed
+  if (product.reviews.find(u => u.user.toString() === req.user._id.toString())) {
+      return next(new ErrorResponse('You can review a product once', 400))
+  }
+
+  //review
+  if (!req.body.rating || !req.body.comment) {
+      return next(new ErrorResponse('Please add review and rating', 400))
+  }
+
+
+  const review = {
+      rating:req.body.rating,
+      comment:req.body.comment,
+      name: req.user.name,
+      user: req.user._id,
+  }
+
+  product.reviews.push(review)
+
+  //total reviews
+  product.numReviews = product.reviews.length;
+  //avg rating
+  product.rating = product.reviews.reduce((acc, prod) => prod.rating + acc, 0) / product.reviews.length
+  await product.save();
+  return res.status(201).json({
+      success: true,
+      msg: 'Review Added !'
+  });
+});
+
 //------------------- A D M I N------------------------
 //@route    /api/products
 //@desc     POST: create a new product
@@ -95,7 +132,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     });
   }
 
-  const { name, description, brand, category, price, countInStock, status } = req.body;
+  const { name, description, brand, category, price, countInStock, status, currency } = req.body;
 
   // Check if the category exists and is not soft-deleted
   const existingCategory = await Category.findOne({ _id: category, isSoftDeleted: false });
@@ -127,7 +164,8 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     price,
     countInStock,
-    isActive: status
+    isActive: status,
+    currency: currency ?? 'BDT'
   });
   const newProduct = await product.save();
   return res.status(200).json({

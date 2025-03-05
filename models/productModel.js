@@ -1,7 +1,36 @@
 import mongoose from "mongoose";
 
+const reviewSchema = mongoose.Schema(
+    {
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        name: {
+            type: String,
+            required: true,
+        },
+        rating: {
+            type: Number,
+            required: true,
+        },
+        comment: {
+            type: String,
+        },
+    },
+    {
+        timestamps: true,
+    }
+);
+
 const productSchema = mongoose.Schema(
     {
+        //to track the creator of the product
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
         name: {
             type: String,
             required: true,
@@ -59,7 +88,21 @@ const productSchema = mongoose.Schema(
         deletedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-        }
+        },
+        currency: {
+            type: String,
+        },
+        rating: {
+            type: Number,
+            required: true,
+            default: 0,
+        },
+        numReviews: {
+            type: Number,
+            required: true,
+            default: 0,
+        },
+        reviews: [reviewSchema]
     },
     {
         timestamps: true,

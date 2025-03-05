@@ -9,3 +9,6 @@
     
 3. Update Products table, add isActive column : true 
     db["products"].updateMany({},{$set:{isActive:true}})
+
+4. Update Products table, add currency column : "BDT" 
+    db["products"].updateMany({},{$set:{currency:"BDT"}})
