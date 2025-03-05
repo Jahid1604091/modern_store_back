@@ -1,5 +1,5 @@
 import express from 'express';
-import { createProduct, deleteProduct, editProduct, getAllProducts, getProduct, incremeentProductView } from '../controllers/productController.js';
+import { addReview, createProduct, deleteProduct, editProduct, getAllProducts, getProduct, incremeentProductView } from '../controllers/productController.js';
 import { protect, authorize, optionalAuth } from '../middleware/authMiddleware.js';
 import path from 'path';
 import multer from 'multer';
@@ -29,5 +29,6 @@ router.route('/:id')
     .delete(protect, authorize('admin'), deleteProduct);
 
 router.route('/:id/view').put(incremeentProductView);
+router.route('/:id/review').post(protect,addReview);
 
 export default router;
