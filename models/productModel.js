@@ -59,6 +59,9 @@ const productSchema = mongoose.Schema(
         deletedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
+        },
+        currency:{
+            type: String,
         }
     },
     {

@@ -95,7 +95,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     });
   }
 
-  const { name, description, brand, category, price, countInStock, status } = req.body;
+  const { name, description, brand, category, price, countInStock, status, currency } = req.body;
 
   // Check if the category exists and is not soft-deleted
   const existingCategory = await Category.findOne({ _id: category, isSoftDeleted: false });
@@ -127,7 +127,8 @@ export const createProduct = asyncHandler(async (req, res) => {
     category,
     price,
     countInStock,
-    isActive: status
+    isActive: status,
+    currency: currency ?? 'BDT'
   });
   const newProduct = await product.save();
   return res.status(200).json({
